@@ -1,0 +1,8 @@
+services:
+  client-service:
+    build: .
+    environment:
+        endpoint: 192.168.178.28
+        port: 1883
+    devices:
+      - /dev/gpiomem
