@@ -1,8 +1,10 @@
 import time
 import random
 import datetime
-import paho.mqtt.client as mqtt
+import subprocess
+from typing import override
 from utils import print_time
+import paho.mqtt.client as mqtt
 
 class MQTTGenericClient:
     def __init__(self, broker, port, listens_to, username = None, password = None):
@@ -64,4 +66,73 @@ class MQTTYOLOClient(MQTTGenericClient):
 
         self.mqttc.loop_stop()
 
+class MQTTRPIClient(MQTTGenericClient):
+    def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
+        super().__init__(broker, port, listens_to, username, password)
+        self.mqttc.on_message = self.on_message
+
+        self.mqttc.connect("127.0.0.1", 1883, 60)
+
+        if self.__is_rpi():
+            from gpiozero import LED
+            print_time("Running on Raspberry Pi")
+        else:
+            print_time("Not running on Raspberry Pi. Using simulated LED")
+            class LED:
+                def __init__(self, pin):
+                    self.pin = pin
+
+                def on(self):
+                    print(f"LED {self.pin} on")
+
+                def off(self):
+                    print(f"LED {self.pin} off")
+
+        self.leds = [LED(4), LED(17), LED(27), LED(22)]
+
+
+    def __is_rpi(self):
+        proc = subprocess.run(["cat", "/proc/cpuinfo"], stdout=subprocess.PIPE)
+        return "Raspberry" in proc.stdout.decode("utf-8")
+
+
+    def on_message(self, client, userdata, msg):
+        print_time(f"Received message: {msg.topic} {str(msg.payload)}")
+        labels = msg.payload.decode("utf-8").split(";")
+
+        for led in self.leds:
+            led.off()
+
+        for label in labels:
+
+            match label:
+                case "red":
+                    self.leds[0].on()
+                case "green":
+                    self.leds[1].on()
+                case "blue":
+                    self.leds[2].on()
+                case "yellow":
+                    self.leds[3].on()
+                case _:
+                    print_time("Unknown label: " + label)
+
+    def mainloop(self):
+        start_time = time.time()
+
+        self.mqttc.loop_start()
+
+        while True:
+            try:
+                current_time = time.time()
+                if current_time - start_time > 5:
+                    print_time("Sending Camera Image")
+                    self.mqttc.publish("images/raw", b"\x01\x02\x03\x04")
+                    start_time = current_time
+                else:
+                    time.sleep(0.1)
+            except KeyboardInterrupt:
+                break
+
+        self.mqttc.loop_stop()
 
