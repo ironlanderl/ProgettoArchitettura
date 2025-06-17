@@ -1,7 +1,8 @@
+import os
 from MQTT import MQTTYOLOClient
 
 def main():
-    client = MQTTYOLOClient("127.0.0.1", 1883, "images/raw", "results/labels")
+    client = MQTTYOLOClient(os.environ["MQTT_ENDPOINT"], int(os.environ["MQTT_PORT"]), "images/raw", "results/labels")
     client.mainloop()
 
 

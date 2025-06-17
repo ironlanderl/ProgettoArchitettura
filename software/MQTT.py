@@ -6,56 +6,67 @@ from typing import override
 from utils import print_time
 import paho.mqtt.client as mqtt
 import cv2
+import numpy as np
 
 class MQTTGenericClient:
     def __init__(self, broker, port, listens_to, username = None, password = None):
         self.mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.mqttc.on_connect = self.on_connect
         self.mqttc.on_subscribe = self.on_subscribe
+        self.mqttc.on_message = self.on_message
 
         self.listens_to = listens_to
+        self.broker = broker
+        self.port = port
+        self.username = username
+        self.password = password
 
-        self.mqttc.connect("127.0.0.1", 1883, 60)
+        if self.username and self.password:
+            self.mqttc.username_pw_set(self.username, self.password)
+
+        self.mqttc.connect(self.broker, self.port, 60)
 
     def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
-        # Since we subscribed only for a single channel, reason_code_list contains
-        # a single entry
         if reason_code_list[0].is_failure:
             print_time(f"Broker rejected your subscription: {reason_code_list[0]}")
         else:
             print_time(f"Broker granted the following QoS: {reason_code_list[0].value}")
 
-    # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, reason_code, properties):
         print_time(f"Connected with result code {reason_code}")
-        # Subscribing in on_connect() means that if we lose the connection and
-        # reconnect then subscriptions will be renewed.
         client.subscribe(self.listens_to)
+
+    def on_message(self, client, userdata, msg):
+        print_time(f"Received unhandled message on topic: {msg.topic}")
+
+    def start_loop(self):
+        self.mqttc.loop_start()
+
+    def stop_loop(self):
+        self.mqttc.loop_stop()
 
 class MQTTYOLOClient(MQTTGenericClient):
     def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
         super().__init__(broker, port, listens_to, username, password)
-        self.mqttc.on_message = self.on_message
+        self.write_to = write_to
+        self.current_frame = None
 
-    # The callback for when a PUBLISH message is received from the server.
+    @override
     def on_message(self, client, userdata, msg):
-        image = msg.payload
+        image_data = msg.payload
         print_time("Immagine ricevuta")
-        # Visualizza l'immagine ricevuta
         try:
-            import numpy as np
-            img_array = np.frombuffer(image, dtype=np.uint8)
+            img_array = np.frombuffer(image_data, dtype=np.uint8)
             frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
             if frame is not None:
-                cv2.imshow("Received Image", frame)
-                cv2.waitKey(1)  # Show the image briefly, non-blocking
+                self.current_frame = frame
             else:
                 print_time("Errore nella decodifica dell'immagine")
         except Exception as e:
-            print_time(f"Errore nella visualizzazione dell'immagine: {e}")
+            print_time(f"Errore nella decodifica dell'immagine: {e}")
 
         start_time = time.time()
-        while start_time + 2 > time.time(): # simulazione di un tempo di elaborazione
+        while start_time + 2 > time.time():
             pass
         print_time("Immagine processata")
 
@@ -66,29 +77,29 @@ class MQTTYOLOClient(MQTTGenericClient):
 
         data = bytearray(chosen_str)
 
-        client.publish("results/labels", data)
+        client.publish(self.write_to, data)
 
     def mainloop(self):
-        self.mqttc.loop_start()
+        self.start_loop()
+        cv2.namedWindow("Received Image")
 
         while True:
             try:
-                time.sleep(0.1)
-                # Chiudi la finestra se l'utente preme 'q'
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if self.current_frame is not None:
+                    cv2.imshow("Received Image", self.current_frame)
+
+                if cv2.waitKey(100) & 0xFF == ord('q'):
                     break
             except KeyboardInterrupt:
                 break
 
-        self.mqttc.loop_stop()
+        self.stop_loop()
         cv2.destroyAllWindows()
 
 class MQTTRPIClient(MQTTGenericClient):
     def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
         super().__init__(broker, port, listens_to, username, password)
-        self.mqttc.on_message = self.on_message
-
-        self.mqttc.connect("127.0.0.1", 1883, 60)
+        self.write_to = write_to
 
         if self.__is_rpi():
             from gpiozero import LED
@@ -107,12 +118,11 @@ class MQTTRPIClient(MQTTGenericClient):
 
         self.leds = [LED(4), LED(17), LED(27), LED(22)]
 
-
     def __is_rpi(self):
         proc = subprocess.run(["cat", "/proc/cpuinfo"], stdout=subprocess.PIPE)
         return "Raspberry" in proc.stdout.decode("utf-8")
 
-
+    @override
     def on_message(self, client, userdata, msg):
         print_time(f"Received message: {msg.topic} {str(msg.payload)}")
         labels = msg.payload.decode("utf-8").split(";")
@@ -121,7 +131,6 @@ class MQTTRPIClient(MQTTGenericClient):
             led.off()
 
         for label in labels:
-
             match label:
                 case "red":
                     self.leds[0].on()
@@ -139,7 +148,7 @@ class MQTTRPIClient(MQTTGenericClient):
         
         start_time = time.time()
 
-        self.mqttc.loop_start()
+        self.start_loop()
 
         while True:
             try:
@@ -150,7 +159,7 @@ class MQTTRPIClient(MQTTGenericClient):
                     ret, frame = cap.read()
                     if ret:
                         _, buffer = cv2.imencode('.jpg', frame)
-                        self.mqttc.publish("images/raw", buffer.tobytes())
+                        self.mqttc.publish(self.write_to, buffer.tobytes())
                         print_time("Image sent")
                     else:
                         print_time("Failed to capture image")
@@ -161,6 +170,5 @@ class MQTTRPIClient(MQTTGenericClient):
             except KeyboardInterrupt:
                 break
 
-        self.mqttc.loop_stop()
+        self.stop_loop()
         cap.release()
-
