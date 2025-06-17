@@ -63,14 +63,16 @@ class MQTTYOLOClient(MQTTGenericClient):
             img_array = np.frombuffer(image_data, dtype=np.uint8)
             frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
             if frame is not None:
-                self.current_frame = frame
+                current_frame = frame
             else:
                 print_time("Errore nella decodifica dell'immagine")
+                current_frame = None
         except Exception as e:
             print_time(f"Errore nella decodifica dell'immagine: {e}")
 
         
-        prediction = self.yolo.predict_on_cv2_image(self.current_frame)
+        prediction = self.yolo.predict_on_cv2_image(current_frame)
+        self.current_frame = self.yolo.overlay_detections(current_frame, prediction)
         print_time(f"Rilevati {len(prediction)} oggetti")
 
         labels = [obj['label'].encode() for obj in prediction]
@@ -147,6 +149,8 @@ class MQTTRPIClient(MQTTGenericClient):
 
     def mainloop(self):
         cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        # cap.set( cv2.CAP_PROP_FPS, 2 )
         
         start_time = time.time()
 
@@ -157,6 +161,11 @@ class MQTTRPIClient(MQTTGenericClient):
                 current_time = time.time()
                 if current_time - start_time > 5:
                     print_time("Sending Camera Image")
+
+                    # Questo, insieme a `cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)`, serve a evitare di avere immagini vecchie nel buffer
+                    # e a garantire che l'immagine inviata sia quella più recente.
+                    for i in range(1):
+                        _, _ = cap.read()
                     
                     ret, frame = cap.read()
                     if ret:
