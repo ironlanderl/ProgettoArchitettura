@@ -1,8 +1,11 @@
 services:
   client-service:
-    build: .
+    build:
+      context: ./software
+      dockerfile: rpi.Dockerfile
     environment:
         MQTT_ENDPOINT: 192.168.178.28
         MQTT_PORT: 1883
     devices:
-      - /dev/gpiomem
+      - /dev/video0
+#      - /dev/gpiomem
