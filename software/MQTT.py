@@ -5,6 +5,7 @@ import subprocess
 from typing import override
 from utils import print_time
 import paho.mqtt.client as mqtt
+import cv2
 
 class MQTTGenericClient:
     def __init__(self, broker, port, listens_to, username = None, password = None):
@@ -40,6 +41,19 @@ class MQTTYOLOClient(MQTTGenericClient):
     def on_message(self, client, userdata, msg):
         image = msg.payload
         print_time("Immagine ricevuta")
+        # Visualizza l'immagine ricevuta
+        try:
+            import numpy as np
+            img_array = np.frombuffer(image, dtype=np.uint8)
+            frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+            if frame is not None:
+                cv2.imshow("Received Image", frame)
+                cv2.waitKey(1)  # Show the image briefly, non-blocking
+            else:
+                print_time("Errore nella decodifica dell'immagine")
+        except Exception as e:
+            print_time(f"Errore nella visualizzazione dell'immagine: {e}")
+
         start_time = time.time()
         while start_time + 2 > time.time(): # simulazione di un tempo di elaborazione
             pass
@@ -52,7 +66,6 @@ class MQTTYOLOClient(MQTTGenericClient):
 
         data = bytearray(chosen_str)
 
-
         client.publish("results/labels", data)
 
     def mainloop(self):
@@ -61,10 +74,14 @@ class MQTTYOLOClient(MQTTGenericClient):
         while True:
             try:
                 time.sleep(0.1)
+                # Chiudi la finestra se l'utente preme 'q'
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
             except KeyboardInterrupt:
                 break
 
         self.mqttc.loop_stop()
+        cv2.destroyAllWindows()
 
 class MQTTRPIClient(MQTTGenericClient):
     def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
@@ -118,6 +135,8 @@ class MQTTRPIClient(MQTTGenericClient):
                     print_time("Unknown label: " + label)
 
     def mainloop(self):
+        cap = cv2.VideoCapture(0)
+        
         start_time = time.time()
 
         self.mqttc.loop_start()
@@ -127,7 +146,15 @@ class MQTTRPIClient(MQTTGenericClient):
                 current_time = time.time()
                 if current_time - start_time > 5:
                     print_time("Sending Camera Image")
-                    self.mqttc.publish("images/raw", b"\x01\x02\x03\x04")
+                    
+                    ret, frame = cap.read()
+                    if ret:
+                        _, buffer = cv2.imencode('.jpg', frame)
+                        self.mqttc.publish("images/raw", buffer.tobytes())
+                        print_time("Image sent")
+                    else:
+                        print_time("Failed to capture image")
+                    
                     start_time = current_time
                 else:
                     time.sleep(0.1)
@@ -135,4 +162,5 @@ class MQTTRPIClient(MQTTGenericClient):
                 break
 
         self.mqttc.loop_stop()
+        cap.release()
 

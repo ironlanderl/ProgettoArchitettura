@@ -1,4 +1,6 @@
 colorzero==2.0
 gpiozero==2.0.1
+numpy==2.3.0
+opencv-python==4.11.0.86
 paho-mqtt==2.1.0
 setuptools==80.9.0
