@@ -48,8 +48,12 @@ class MQTTGenericClient:
 class MQTTYOLOClient(MQTTGenericClient):
     def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
         super().__init__(broker, port, listens_to, username, password)
+        print_time("Starting YOLO client")
+        from YOLO import YOLO
         self.write_to = write_to
         self.current_frame = None
+        self.yolo = YOLO("yolo11n.pt")
+        print_time("YOLO model loaded")
 
     @override
     def on_message(self, client, userdata, msg):
@@ -65,17 +69,15 @@ class MQTTYOLOClient(MQTTGenericClient):
         except Exception as e:
             print_time(f"Errore nella decodifica dell'immagine: {e}")
 
-        start_time = time.time()
-        while start_time + 2 > time.time():
-            pass
-        print_time("Immagine processata")
+        
+        prediction = self.yolo.predict_on_cv2_image(self.current_frame)
+        print_time(f"Rilevati {len(prediction)} oggetti")
 
-        labels = [b"red", b"green", b"blue", b"yellow"]
+        labels = [obj['label'].encode() for obj in prediction]
+        labels_str = b";".join(labels)
+        print_time(f"Invio etichette: {labels_str.decode('utf-8')}")
 
-        chosen = random.sample(labels, random.randint(0, len(labels)))
-        chosen_str = b";".join(chosen)
-
-        data = bytearray(chosen_str)
+        data = bytearray(labels_str)
 
         client.publish(self.write_to, data)
 
