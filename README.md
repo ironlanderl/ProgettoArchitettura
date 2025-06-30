@@ -4,7 +4,7 @@
 
 This project implements a face detection system. A Raspberry Pi captures video frames and sends them via MQTT to a PC, which performs YOLO-based object detection using its GPU and sends the results back.
 
-For detailed setup and usage instructions, please refer to the [Wiki](link-to-your-wiki).
+For detailed setup and usage instructions, please refer to the [Wiki](https://github.com/ironlanderl/ProgettoArchitettura/wiki).
 
 ### Quick Start
 
