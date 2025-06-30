@@ -1,5 +1,25 @@
 # Progetto di Architettura dei Calcolatori e Cloud Computing
 
+## Getting Started
+
+This project implements a face detection system. A Raspberry Pi captures video frames and sends them via MQTT to a PC, which performs YOLO-based object detection using its GPU and sends the results back.
+
+For detailed setup and usage instructions, please refer to the [Wiki](link-to-your-wiki).
+
+### Quick Start
+
+1.  **Prerequisites:** Ensure you have Docker, Docker Compose, and (for PC) NVIDIA Container Toolkit installed.
+2.  **Clone the repository:** `git clone https://github.com/ironlanderl/ProgettoArchitettura`
+3.  **Configure Environment Variables:** Copy `.env.example` to `.env` in `pc_app/` and `rpi_app/` and update `MQTT_ENDPOINT` and `MQTT_PORT`.
+4.  **Start Services:**
+    *   Navigate to `mosquitto/` and run `docker compose up -d`.
+    *   Navigate to `rpi_app/` and run `docker compose up -d` (ensure camera is connected).
+    *   Navigate to `pc_app/` and run `docker compose up -d`.
+
+### Verification
+
+Check Docker logs for each service to confirm they are running and communicating correctly.
+
 ## Notes
 
 - [How to set up and use private docker registry with authentication & web-ui](https://medium.com/@shubnimkar/how-to-set-up-and-use-private-docker-registry-with-authentication-web-ui-361ee39b2079)
