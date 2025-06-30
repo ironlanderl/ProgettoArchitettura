@@ -1,10 +1,13 @@
-FROM python:3.12-slim
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY --from=ghcr.io/astral-sh/uv:0.7.13 /uv /uvx /bin/
 
 WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
 COPY . .
 
-CMD ["python", "pc-main.py"]
+ENV PYTHONUNBUFFERED=1
+RUN uv pip install -r requirements.txt --system --no-cache-dir --break-system-packages
+
+ENTRYPOINT ["python3", "-u", "pc-main.py"]
