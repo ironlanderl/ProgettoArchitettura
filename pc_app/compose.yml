@@ -1,0 +1,7 @@
+services:
+  pc-service:
+    build:
+      context: .
+    environment:
+        MQTT_ENDPOINT: 192.168.178.28
+        MQTT_PORT: 1883
