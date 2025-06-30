@@ -75,8 +75,11 @@ class MQTTYOLOClient(MQTTGenericClient):
         self.current_frame = self.yolo.overlay_detections(current_frame, prediction)
         print_time(f"Rilevati {len(prediction)} oggetti")
 
-        labels = [obj['label'].encode() for obj in prediction]
-        labels_str = b";".join(labels)
+        if len(prediction) > 0:
+            labels = [obj['label'].encode() for obj in prediction]
+            labels_str = b";".join(labels)
+        else:
+            labels_str = b"None"
         print_time(f"Invio etichette: {labels_str.decode('utf-8')}")
 
         data = bytearray(labels_str)
@@ -120,7 +123,7 @@ class MQTTRPIClient(MQTTGenericClient):
                 def off(self):
                     print(f"LED {self.pin} off")
 
-        self.leds = [LED(4), LED(17), LED(27), LED(22)]
+        self.leds = [LED(4), LED(17)]
 
     def __is_rpi(self):
         proc = subprocess.run(["cat", "/proc/cpuinfo"], stdout=subprocess.PIPE)
@@ -136,14 +139,10 @@ class MQTTRPIClient(MQTTGenericClient):
 
         for label in labels:
             match label:
-                case "red":
+                case "Face":
                     self.leds[0].on()
-                case "green":
+                case "None":
                     self.leds[1].on()
-                case "blue":
-                    self.leds[2].on()
-                case "yellow":
-                    self.leds[3].on()
                 case _:
                     print_time("Unknown label: " + label)
 
