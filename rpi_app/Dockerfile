@@ -5,8 +5,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 python3
 COPY --from=ghcr.io/astral-sh/uv:0.7.13 /uv /uvx /bin/
 
 WORKDIR /app
-COPY rpi-requirements.txt .
-RUN uv pip install -r rpi-requirements.txt --system --no-cache-dir --break-system-packages
+COPY requirements.txt .
+RUN uv pip install -r requirements.txt --system --no-cache-dir --break-system-packages
 
 COPY . .
 

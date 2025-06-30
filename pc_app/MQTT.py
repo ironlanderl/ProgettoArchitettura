@@ -52,7 +52,7 @@ class MQTTYOLOClient(MQTTGenericClient):
         from YOLO import YOLO
         self.write_to = write_to
         self.current_frame = None
-        self.yolo = YOLO("yolo11n.pt")
+        self.yolo = YOLO("yolov8n_100e.pt")
         print_time("YOLO model loaded")
 
     @override

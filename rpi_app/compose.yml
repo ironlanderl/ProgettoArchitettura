@@ -1,11 +1,12 @@
 services:
   rpi-service:
+    image: ${DOCKER_REGISTRY}/rpi-app:latest
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-        MQTT_ENDPOINT: 192.168.178.28
-        MQTT_PORT: 1883
+      - MQTT_ENDPOINT=${MQTT_ENDPOINT}
+      - MQTT_PORT=${MQTT_PORT}
     devices:
       - /dev/video0
 #      - /dev/gpiomem
