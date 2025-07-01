@@ -11,6 +11,8 @@ For detailed setup and usage instructions, please refer to the [Wiki](https://gi
 1.  **Prerequisites:** Ensure you have Docker, Docker Compose, and (for PC) NVIDIA Container Toolkit installed.
 2.  **Clone the repository:** `git clone https://github.com/ironlanderl/ProgettoArchitettura`
 3.  **Configure Environment Variables:** Copy `.env.example` to `.env` in `pc_app/` and `rpi_app/` and update `MQTT_ENDPOINT` and `MQTT_PORT`.
+4.  **Download YOLOv8 Model:**
+    *   Download any of the YOLOv8 model from [YOLOv8-Face](https://github.com/Yusepp/YOLOv8-Face) to the `pc_app/` directory. Then modify the `docker-compose.yml` file to mount the model file.
 4.  **Start Services:**
     *   Navigate to `mosquitto/` and run `docker compose up -d`.
     *   Navigate to `rpi_app/` and run `docker compose up -d` (ensure camera is connected).
