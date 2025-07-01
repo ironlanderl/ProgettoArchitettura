@@ -1,1 +1,4 @@
-/run/media/ironlanderl/Maxtor/Pycharm/ProgettoArchitetture/pc_app/utils.py
+import datetime
+
+def print_time(msg):
+    print(f"[{datetime.datetime.now()}] {msg}")
