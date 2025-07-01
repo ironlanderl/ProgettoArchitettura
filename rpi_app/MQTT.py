@@ -1,12 +1,14 @@
+import os
+import cv2
 import time
 import random
+import shutil
 import datetime
 import subprocess
+import numpy as np
 from typing import override
 from utils import print_time
 import paho.mqtt.client as mqtt
-import cv2
-import numpy as np
 
 class MQTTGenericClient:
     def __init__(self, broker, port, listens_to, username = None, password = None):
@@ -46,13 +48,16 @@ class MQTTGenericClient:
         self.mqttc.loop_stop()
 
 class MQTTYOLOClient(MQTTGenericClient):
-    def __init__(self, broker, port, listens_to, write_to, username = None, password = None):
+    def __init__(self, broker, port, listens_to, write_to, model_filename, username = None, password = None):
         super().__init__(broker, port, listens_to, username, password)
         print_time("Starting YOLO client")
         from YOLO import YOLO
         self.write_to = write_to
         self.current_frame = None
-        self.yolo = YOLO("yolov8n_100e.pt")
+        if not os.path.exists(model_filename):
+            print_time("Modello non esistente.")
+            exit(1)
+        self.yolo = YOLO(model_filename)
         print_time("YOLO model loaded")
 
     @override
@@ -182,3 +187,7 @@ class MQTTRPIClient(MQTTGenericClient):
 
         self.stop_loop()
         cap.release()
+
+        # Turn LEDs off on shutdown
+        for led in self.leds:
+            led.off()

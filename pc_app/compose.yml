@@ -5,6 +5,7 @@ services:
       context: .
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./yolov8n_100e.pt:/yolomodel.pt:ro
     deploy:
       resources:
         reservations:

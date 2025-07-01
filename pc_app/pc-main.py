@@ -2,7 +2,7 @@ import os
 from MQTT import MQTTYOLOClient
 
 def main():
-    client = MQTTYOLOClient(os.environ["MQTT_ENDPOINT"], int(os.environ["MQTT_PORT"]), "images/raw", "results/labels")
+    client = MQTTYOLOClient(os.environ["MQTT_ENDPOINT"], int(os.environ["MQTT_PORT"]), "images/raw", "results/labels", "/yolomodel.pt")
     client.mainloop()
 
 

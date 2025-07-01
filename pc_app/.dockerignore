@@ -13,3 +13,6 @@ __pycache__/
 # IDEs
 .idea/
 .env
+
+# Models
+*.pt
