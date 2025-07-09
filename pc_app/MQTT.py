@@ -16,6 +16,7 @@ class MQTTGenericClient:
         self.mqttc.on_connect = self.on_connect
         self.mqttc.on_subscribe = self.on_subscribe
         self.mqttc.on_message = self.on_message
+        self.is_running_on_docker = os.getenv("IS_DOCKER", "false").lower() == "true"
 
         self.listens_to = listens_to
         self.broker = broker
@@ -93,20 +94,25 @@ class MQTTYOLOClient(MQTTGenericClient):
 
     def mainloop(self):
         self.start_loop()
-        cv2.namedWindow("Received Image")
+        if not self.is_running_on_docker:
+            cv2.namedWindow("Received Image")
 
         while True:
             try:
-                if self.current_frame is not None:
-                    cv2.imshow("Received Image", self.current_frame)
+                if not self.is_running_on_docker:
+                    if self.current_frame is not None:
+                        cv2.imshow("Received Image", self.current_frame)
 
-                if cv2.waitKey(100) & 0xFF == ord('q'):
-                    break
+                    if cv2.waitKey(100) & 0xFF == ord('q'):
+                        break
+                else:
+                    time.sleep(0.1)
             except KeyboardInterrupt:
                 break
 
         self.stop_loop()
-        cv2.destroyAllWindows()
+        if not self.is_running_on_docker:
+            cv2.destroyAllWindows()
 
 class MQTTRPIClient(MQTTGenericClient):
     def __init__(self, broker, port, listens_to, write_to, username = None, password = None):

@@ -4,7 +4,6 @@ services:
     build:
       context: .
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./yolov8n_100e.pt:/yolomodel.pt:ro
     deploy:
       resources:
@@ -14,8 +13,6 @@ services:
               count: all
               capabilities: [gpu]
     environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
       - MQTT_ENDPOINT=${MQTT_ENDPOINT}
       - MQTT_PORT=${MQTT_PORT}
-      
+      - IS_DOCKER=true
