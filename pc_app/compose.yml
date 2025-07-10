@@ -15,4 +15,6 @@ services:
     environment:
       - MQTT_ENDPOINT=${MQTT_ENDPOINT}
       - MQTT_PORT=${MQTT_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
       - IS_DOCKER=true
